@@ -1,0 +1,18 @@
+<resources>
+    <string name="app_name">My Application</string>
+    <string name="title_home">Home</string>
+    <string name="title_dashboard">Dashboard</string>
+    <string name="title_notifications">Notifications</string>
+    <string name="email_label">Email*</string>
+    <string name="password_label">Password*</string>
+    <string name="confirm_password_label">Confirm Password*</string>
+    <string name="login_label">Login</string>
+    <string name="sign_up_instead_label">Sign Up Instead</string>
+    <string name="full_name_label">Full Name*</string>
+    <string name="sign_up_label">Sign Up</string>
+
+    <string name="alert_enter_valid_details">Please enter all mandatory fields and valid email address</string>
+    <string name="alert_confirm_password">Password and confirm password should be same</string>
+    <string name="alert_password_length">Password must contain at least eight characters</string>
+    <string name="alert_internet_connection">Please check your internet connection</string>
+</resources>

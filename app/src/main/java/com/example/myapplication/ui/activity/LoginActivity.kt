@@ -5,7 +5,6 @@ import android.os.Build
 import android.os.Bundle
 import android.view.View
 import android.widget.Toast
-import androidx.annotation.RequiresApi
 import androidx.appcompat.app.AppCompatActivity
 import androidx.lifecycle.ViewModelProviders
 import com.example.myapplication.R
@@ -41,7 +40,6 @@ class LoginActivity : AppCompatActivity(), View.OnClickListener {
         activityLoginTvSignUpInstead.setOnClickListener(this)
     }
 
-    @RequiresApi(Build.VERSION_CODES.M)
     override fun onClick(view: View?) {
         val id = view?.id
         if (id == R.id.activityLoginBtnLogin) {
@@ -85,7 +83,7 @@ class LoginActivity : AppCompatActivity(), View.OnClickListener {
                         loginProgressBar.visibility = View.GONE
                         if (it.data!!.isSuccessful) {
                             it.data.body()?.authenticationToken?.let { authToken ->
-                                PreferenceManager.getInstance(this)?.setAuthToken(authToken)
+                                PreferenceManager.getInstance(this).setAuthToken(authToken)
                                 val intent = Intent(this, MapsActivity::class.java)
                                 startActivity(intent)
                                 finish()

@@ -83,7 +83,7 @@ class SignUpActivity : AppCompatActivity() {
                         signUpProgressBar.visibility = View.GONE
                         if (it.data!!.isSuccessful) {
                             it.data.body()?.authenticationToken?.let { authToken ->
-                                PreferenceManager.getInstance(this)?.setAuthToken(authToken)
+                                PreferenceManager.getInstance(this).setAuthToken(authToken)
                                 val intent = Intent(this, LoginActivity::class.java)
                                 startActivity(intent)
                                 finish()

@@ -9,10 +9,18 @@ import android.location.Location
 import android.os.Bundle
 import android.os.Looper
 import android.util.Log
+import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
+import androidx.lifecycle.ViewModelProviders
 import com.example.myapplication.R
+import com.example.myapplication.model.response.Vehicle
+import com.example.myapplication.preferences.PreferenceManager
+import com.example.myapplication.retrofit.RetrofitClient
+import com.example.myapplication.ui.base.ViewModelFactory
+import com.example.myapplication.util.Status
+import com.example.myapplication.viewmodel.VehicleViewModel
 import com.google.android.gms.location.*
 import com.google.android.gms.maps.CameraUpdateFactory
 import com.google.android.gms.maps.GoogleMap
@@ -34,29 +42,71 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback,
     private lateinit var mGoogleMap: GoogleMap
     private lateinit var fusedLocationClient: FusedLocationProviderClient
     private lateinit var locationCallback: LocationCallback
-    private val first = LatLng(-34.00, 151.00)
-    private val second = LatLng(-31.083332, 150.916672)
-    private val third = LatLng(-32.916668, 151.750000)
-    private val forth = LatLng(-27.470125, 153.021072)
-    private var locationList: ArrayList<LatLng> = arrayListOf()
+    private lateinit var mVehicleViewModel: VehicleViewModel
+    private var mLocationList: ArrayList<LatLng> = arrayListOf()
+    private var mVehiclesList: ArrayList<Vehicle.VehicleItem> = arrayListOf()
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_maps)
-        val mapFragment = supportFragmentManager
-            .findFragmentById(R.id.map) as SupportMapFragment
+        initView()
+    }
 
+    /**
+     * Method to initialize UI views and registers listeners
+     */
+    private fun initView() {
+        mVehicleViewModel =
+            ViewModelProviders.of(this, ViewModelFactory(RetrofitClient.apiService))
+                .get(VehicleViewModel::class.java)
+        val mapFragment = supportFragmentManager.findFragmentById(R.id.map) as SupportMapFragment
         fusedLocationClient = LocationServices.getFusedLocationProviderClient(this)
         mapFragment.getMapAsync(this)
-        locationList.add(first)
-        locationList.add(second)
-        locationList.add(third)
-        locationList.add(forth)
+        getVehicles()
+    }
+
+
+    /**
+     * Method to observe vehicles details
+     */
+    private fun getVehicles() {
+        val authToken = PreferenceManager.getInstance(this).getAuthToken()
+        if (authToken != null) {
+            mVehicleViewModel.getVehiclesDetails(authToken).observe(this, {
+                it?.let { resource ->
+                    when (resource.status) {
+                        Status.SUCCESS -> {
+                            if (it.data!!.isSuccessful) {
+                                mVehiclesList = it.data.body()!!
+                                for (items in it.data.body()!!) {
+                                    mLocationList.add(LatLng(items.lat, items.lng))
+                                }
+                                for (i in 0 until mLocationList.size) {
+                                    mGoogleMap.moveCamera(
+                                        CameraUpdateFactory.newLatLng(mLocationList[i])
+                                    )
+                                    mGoogleMap.addMarker(
+                                        MarkerOptions().position(mLocationList[i])
+                                            .title(mVehiclesList[i].vehicleMake)
+                                            .icon(bitmapFromVector())
+                                    )
+                                }
+                            }
+                        }
+                        Status.ERROR -> {
+                            Toast.makeText(this, it.message, Toast.LENGTH_LONG).show()
+                        }
+                        Status.LOADING -> {
+                            Log.d("TAG", "Loading ::::")
+                        }
+                    }
+                }
+            })
+        }
     }
 
     override fun onMapReady(googleMap: GoogleMap) {
         mGoogleMap = googleMap
-
         if (ContextCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION)
             == PackageManager.PERMISSION_GRANTED && ContextCompat.checkSelfPermission(
                 this, Manifest.permission.ACCESS_FINE_LOCATION
@@ -86,14 +136,6 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback,
         mGoogleMap.setOnMyLocationButtonClickListener(this)
         mGoogleMap.setOnMyLocationClickListener(this)
         initLocationTracking()
-        for (i in 0 until locationList.size) {
-            mGoogleMap.moveCamera(CameraUpdateFactory.newLatLng(locationList[i]))
-            mGoogleMap.addMarker(
-                MarkerOptions().position(locationList[i])
-                    .title("Marker")
-                    .icon(bitmapFromVector())
-            )
-        }
     }
 
     @SuppressLint("MissingPermission")
@@ -101,9 +143,9 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback,
         locationCallback = object : LocationCallback() {
             override fun onLocationResult(locationResult: LocationResult?) {
                 locationResult ?: return
-                for (location in locationResult.locations) {
+                /*for (location in locationResult.locations) {
                     updateMapLocation(location)
-                }
+                }*/
             }
         }
 
@@ -200,3 +242,4 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback,
     }
 
 }
+

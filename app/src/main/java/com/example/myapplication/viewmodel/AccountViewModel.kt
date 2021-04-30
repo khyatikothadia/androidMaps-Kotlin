@@ -11,7 +11,7 @@ import kotlinx.coroutines.Dispatchers
 class AccountViewModel(private val accountRepository: AccountRepository) : ViewModel() {
 
     /**
-     * Method to get login user info hitting login api
+     * Method to get login user info by hitting login api
      */
     fun getUserInfo(loginRequest: LoginRequest) = liveData(Dispatchers.IO) {
         emit(Resource.loading(data = null))

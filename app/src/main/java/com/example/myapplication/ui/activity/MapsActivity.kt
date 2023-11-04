@@ -13,8 +13,10 @@ import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
-import androidx.lifecycle.ViewModelProviders
+import androidx.lifecycle.ViewModelProvider
 import com.example.myapplication.R
+import com.example.myapplication.databinding.ActivityLoginBinding
+import com.example.myapplication.databinding.ActivityMapsBinding
 import com.example.myapplication.model.response.Vehicle
 import com.example.myapplication.preferences.PreferenceManager
 import com.example.myapplication.retrofit.RetrofitClient
@@ -35,6 +37,8 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback,
     GoogleMap.OnMyLocationButtonClickListener,
     GoogleMap.OnMyLocationClickListener {
 
+    private lateinit var binding: ActivityMapsBinding
+
     companion object {
         private const val LOCATION_PERMISSION = 42
     }
@@ -48,7 +52,9 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback,
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        setContentView(R.layout.activity_maps)
+        binding = ActivityMapsBinding.inflate(layoutInflater)
+        val view = binding.root
+        setContentView(view)
         initView()
     }
 
@@ -57,8 +63,10 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback,
      */
     private fun initView() {
         mVehicleViewModel =
-            ViewModelProviders.of(this, ViewModelFactory(RetrofitClient.apiService))
-                .get(VehicleViewModel::class.java)
+            ViewModelProvider(
+                this,
+                ViewModelFactory(RetrofitClient.apiService)
+            )[VehicleViewModel::class.java]
         val mapFragment = supportFragmentManager.findFragmentById(R.id.map) as SupportMapFragment
         fusedLocationClient = LocationServices.getFusedLocationProviderClient(this)
         mapFragment.getMapAsync(this)
@@ -72,7 +80,7 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback,
     private fun getVehicles() {
         val authToken = PreferenceManager.getInstance(this).getAuthToken()
         if (authToken != null) {
-            mVehicleViewModel.getVehiclesDetails(authToken).observe(this, {
+            mVehicleViewModel.getVehiclesDetails(authToken).observe(this) {
                 it?.let { resource ->
                     when (resource.status) {
                         Status.SUCCESS -> {
@@ -93,15 +101,17 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback,
                                 }
                             }
                         }
+
                         Status.ERROR -> {
                             Toast.makeText(this, it.message, Toast.LENGTH_LONG).show()
                         }
+
                         Status.LOADING -> {
                             Log.d("TAG", "Loading ::::")
                         }
                     }
                 }
-            })
+            }
         }
     }
 
@@ -141,11 +151,11 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback,
     @SuppressLint("MissingPermission")
     private fun initLocationTracking() {
         locationCallback = object : LocationCallback() {
-            override fun onLocationResult(locationResult: LocationResult?) {
-                locationResult ?: return
-                /*for (location in locationResult.locations) {
+            override fun onLocationResult(locationResult: LocationResult) {
+                //locationResult
+                for (location in locationResult.locations) {
                     updateMapLocation(location)
-                }*/
+                }
             }
         }
 
@@ -242,4 +252,3 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback,
     }
 
 }
-

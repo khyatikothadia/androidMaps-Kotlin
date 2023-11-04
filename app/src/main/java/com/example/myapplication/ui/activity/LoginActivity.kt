@@ -1,13 +1,13 @@
 package com.example.myapplication.ui.activity
 
 import android.content.Intent
-import android.os.Build
 import android.os.Bundle
 import android.view.View
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
-import androidx.lifecycle.ViewModelProviders
+import androidx.lifecycle.ViewModelProvider
 import com.example.myapplication.R
+import com.example.myapplication.databinding.ActivityLoginBinding
 import com.example.myapplication.model.request.LoginRequest
 import com.example.myapplication.preferences.PreferenceManager
 import com.example.myapplication.retrofit.RetrofitClient
@@ -17,16 +17,18 @@ import com.example.myapplication.util.Utils
 import com.example.myapplication.util.Utils.Companion.hideSoftKeyboard
 import com.example.myapplication.util.Utils.Companion.isNetworkConnected
 import com.example.myapplication.viewmodel.AccountViewModel
-import kotlinx.android.synthetic.main.activity_login.*
 import org.json.JSONObject
 
 class LoginActivity : AppCompatActivity(), View.OnClickListener {
 
+    private lateinit var binding: ActivityLoginBinding
     private lateinit var mAccountViewModel: AccountViewModel
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        setContentView(R.layout.activity_login)
+        binding = ActivityLoginBinding.inflate(layoutInflater)
+        val view = binding.root
+        setContentView(view)
         initView()
     }
 
@@ -34,10 +36,12 @@ class LoginActivity : AppCompatActivity(), View.OnClickListener {
      * Method to initialize UI views and registers listeners
      */
     private fun initView() {
-        mAccountViewModel = ViewModelProviders.of(this, ViewModelFactory(RetrofitClient.apiService))
-            .get(AccountViewModel::class.java)
-        activityLoginBtnLogin.setOnClickListener(this)
-        activityLoginTvSignUpInstead.setOnClickListener(this)
+        mAccountViewModel = ViewModelProvider(
+            this,
+            ViewModelFactory(RetrofitClient.apiService)
+        )[AccountViewModel::class.java]
+        binding.activityLoginBtnLogin.setOnClickListener(this)
+        binding.activityLoginTvSignUpInstead.setOnClickListener(this)
     }
 
     override fun onClick(view: View?) {
@@ -56,12 +60,12 @@ class LoginActivity : AppCompatActivity(), View.OnClickListener {
      */
     private fun performValidation() {
         val emailPattern = "[a-zA-Z0-9._-]+@[a-z]+\\.+[a-z]+"
-        val emailId = activityLoginEdtEmail.text.toString()
-        val password = activityLoginEdtPassword.text.toString()
+        val emailId = binding.activityLoginEdtEmail.text.toString()
+        val password = binding.activityLoginEdtPassword.text.toString()
         if (emailId.isNotEmpty() && emailId.matches(emailPattern.toRegex()) &&
             password.isNotEmpty()
         ) {
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M && isNetworkConnected(this)) {
+            if (isNetworkConnected(this)) {
                 performUserLogin(emailId, password)
             } else {
                 Utils.displayDialog(getString(R.string.alert_internet_connection), this, false)
@@ -76,11 +80,11 @@ class LoginActivity : AppCompatActivity(), View.OnClickListener {
      */
     private fun performUserLogin(emailId: String, password: String) {
         val loginRequest = LoginRequest(emailId, password)
-        mAccountViewModel.getUserInfo(loginRequest).observe(this, { it ->
+        mAccountViewModel.getUserInfo(loginRequest).observe(this) { it ->
             it?.let { resource ->
                 when (resource.status) {
                     Status.SUCCESS -> {
-                        loginProgressBar.visibility = View.GONE
+                        binding.loginProgressBar.visibility = View.GONE
                         if (it.data!!.isSuccessful) {
                             it.data.body()?.authenticationToken?.let { authToken ->
                                 PreferenceManager.getInstance(this).setAuthToken(authToken)
@@ -97,15 +101,17 @@ class LoginActivity : AppCompatActivity(), View.OnClickListener {
                             }
                         }
                     }
+
                     Status.ERROR -> {
-                        loginProgressBar.visibility = View.GONE
+                        binding.loginProgressBar.visibility = View.GONE
                         Toast.makeText(this, it.message, Toast.LENGTH_LONG).show()
                     }
+
                     Status.LOADING -> {
-                        loginProgressBar.visibility = View.VISIBLE
+                        binding.loginProgressBar.visibility = View.VISIBLE
                     }
                 }
             }
-        })
+        }
     }
 }
